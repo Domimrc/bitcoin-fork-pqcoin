@@ -1,15 +1,15 @@
-// Copyright (c) 2016-2020 The Bitcoin Core developers
+// Copyright (c) 2016-2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_SUPPORT_LOCKEDPOOL_H
 #define BITCOIN_SUPPORT_LOCKEDPOOL_H
 
-#include <cstddef>
+#include <stdint.h>
 #include <list>
 #include <map>
-#include <memory>
 #include <mutex>
+#include <memory>
 #include <unordered_map>
 
 /**
@@ -22,7 +22,7 @@ public:
     virtual ~LockedPageAllocator() {}
     /** Allocate and lock memory pages.
      * If len is not a multiple of the system page size, it is rounded up.
-     * Returns nullptr in case of allocation failure.
+     * Returns 0 in case of allocation failure.
      *
      * If locking the memory pages could not be accomplished it will still
      * return the memory, however the lockingSuccess flag will be false.
@@ -89,23 +89,23 @@ public:
      */
     bool addressInArena(void *ptr) const { return ptr >= base && ptr < end; }
 private:
-    typedef std::multimap<size_t, void*> SizeToChunkSortedMap;
+    typedef std::multimap<size_t, char*> SizeToChunkSortedMap;
     /** Map to enable O(log(n)) best-fit allocation, as it's sorted by size */
     SizeToChunkSortedMap size_to_free_chunk;
 
-    typedef std::unordered_map<void*, SizeToChunkSortedMap::const_iterator> ChunkToSizeMap;
+    typedef std::unordered_map<char*, SizeToChunkSortedMap::const_iterator> ChunkToSizeMap;
     /** Map from begin of free chunk to its node in size_to_free_chunk */
     ChunkToSizeMap chunks_free;
     /** Map from end of free chunk to its node in size_to_free_chunk */
     ChunkToSizeMap chunks_free_end;
 
     /** Map from begin of used chunk to its size */
-    std::unordered_map<void*, size_t> chunks_used;
+    std::unordered_map<char*, size_t> chunks_used;
 
     /** Base address of arena */
-    void* base;
+    char* base;
     /** End address of arena */
-    void* end;
+    char* end;
     /** Minimum chunk alignment */
     size_t alignment;
 };
@@ -198,7 +198,7 @@ private:
 
     std::list<LockedPageArena> arenas;
     LockingFailed_Callback lf_cb;
-    size_t cumulative_bytes_locked{0};
+    size_t cumulative_bytes_locked;
     /** Mutex protects access to this pool's data structures, including arenas.
      */
     mutable std::mutex mutex;
@@ -221,8 +221,7 @@ public:
     /** Return the current instance, or create it once */
     static LockedPoolManager& Instance()
     {
-        static std::once_flag init_flag;
-        std::call_once(init_flag, LockedPoolManager::CreateInstance);
+        std::call_once(LockedPoolManager::init_flag, LockedPoolManager::CreateInstance);
         return *LockedPoolManager::_instance;
     }
 
@@ -235,6 +234,7 @@ private:
     static bool LockingFailed();
 
     static LockedPoolManager* _instance;
+    static std::once_flag init_flag;
 };
 
 #endif // BITCOIN_SUPPORT_LOCKEDPOOL_H

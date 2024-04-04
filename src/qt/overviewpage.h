@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2022 The Bitcoin Core developers
+// Copyright (c) 2011-2018 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,7 +30,7 @@ class OverviewPage : public QWidget
     Q_OBJECT
 
 public:
-    explicit OverviewPage(const PlatformStyle *platformStyle, QWidget *parent = nullptr);
+    explicit OverviewPage(const PlatformStyle *platformStyle, QWidget *parent = 0);
     ~OverviewPage();
 
     void setClientModel(ClientModel *clientModel);
@@ -39,33 +39,26 @@ public:
 
 public Q_SLOTS:
     void setBalance(const interfaces::WalletBalances& balances);
-    void setPrivacy(bool privacy);
 
 Q_SIGNALS:
     void transactionClicked(const QModelIndex &index);
     void outOfSyncWarningClicked();
 
-protected:
-    void changeEvent(QEvent* e) override;
-
 private:
     Ui::OverviewPage *ui;
-    ClientModel* clientModel{nullptr};
-    WalletModel* walletModel{nullptr};
-    bool m_privacy{false};
-
-    const PlatformStyle* m_platform_style;
+    ClientModel *clientModel;
+    WalletModel *walletModel;
+    interfaces::WalletBalances m_balances;
 
     TxViewDelegate *txdelegate;
     std::unique_ptr<TransactionFilterProxy> filter;
 
 private Q_SLOTS:
-    void LimitTransactionRows();
     void updateDisplayUnit();
     void handleTransactionClicked(const QModelIndex &index);
     void updateAlerts(const QString &warnings);
     void updateWatchOnlyLabels(bool showWatchOnly);
-    void setMonospacedFont(const QFont&);
+    void handleOutOfSyncWarningClicks();
 };
 
 #endif // BITCOIN_QT_OVERVIEWPAGE_H
